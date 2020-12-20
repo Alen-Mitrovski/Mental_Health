@@ -1,0 +1,202 @@
+---
+title: "Predictors of Mental Health"
+author: "Alen Mitrovski"
+date: "09/12/2020"
+output:
+  pdf_document: default
+  bookdown::pdf_document2:
+    citation_package: natbib
+abstract: Mental Health research is a rapidly growing field of study as rates of mental health problems in Canada have been increasing. In my report, I use a logistic regression model to examine the relationship between an individual’s mental health and other health related variables. From my results, I find that poor mental health is positively correlated with drug use, less physical activity, high stress, young, underweight and male individuals. These results are significant as they will aid us to understand the issue, focus on mitigating certain predictive variables and raise awareness in the scientific community. 
+
+bibliography: references.bib
+---
+
+```{r, echo = F, warning=F, message=F}
+library(tidyverse)
+library(gtsummary)
+library(knitr)
+```
+
+
+```{r, echo = F, warning=F, message=F}
+# read in cchs data through the Cleaning_Mental_Health_PS5 file in the inputs folder
+cchs <- read_csv("inputs/cchs.csv")
+```
+
+
+```{r, echo=F, message=F, warning=F}
+# create new variable which for some we plan to use for the analysis, others were
+# used to visualize the data for the reader
+cchs <- cchs %>% 
+  filter(Perceived_Mental_Health < 2)
+
+cchs_logit <- glm(Perceived_Mental_Health ~ Age +
+                   Sex + Illicit_drug_use_12mon + Perceived_life_stress + Self_perceived_weight + Weekly_Days_Physically_Active,
+                 data = cchs, family = binomial())
+```
+
+
+**Keywords**: Mental Health, Stress, Drug Usage, Canadian Health, Logistic Regression;
+
+
+# Introduction
+
+Mental Health is a term that describes an individual’s emotional and psychological condition. Over the years, the prevalence of mental health problems has grown exponentially and as a result, led to greater focus on it’s research. According to Smetanin et al., 1 in 5 Canadians experience either a mental health or addiction issue in a given year (Smetanin, 2011). Furthermore, by the age of forty, 50% of individuals in Canada have had a mental health illness (Smetanin, 2011). With this upward trend, it will be important to conduct further research, improve current resources and educate individuals on the mental health risks. 
+
+Despite greater awareness, acceptance and access to services, there remains a stigma amongst the Canadian population. In a 2015 survey, researchers found that 39% of Ontarians would not tell their employers if they had a mental health issue (Canadian Medical Association, 2008). In addition, a 2016 survey found that 40% of respondents never sought medical help for depressive and anxiety pervaded feelings (Book, 2016). The underreporting of mental health problems is a concern as the fear of being socially stigmatized leads to an under-utilization of medical resources and further perpetuation of the present stigma. 
+
+In this study, I am interested in exploring the relationship between an individual’s mental health and other key variables. In addition to perceived mental health, I have also selected the following variables of interest from the Canadian Community Health Survey (CCHS): Age, Sex, Perceived Mental Health, Perceived Weight, Stress Levels, Drug Use and Weekly Physical Activity. The CCHS used in this study was conducted for the time period of 2017-2018. The objective of the survey was to gather health related information from all provinces and territories in Canada. The survey was conducted by 113, 291 respondents over the age of 12 and includes X variables. In order to conduct this analysis, I utilized a logistic regression model with perceived mental health as the binary dependent variable. 
+
+This report includes 4 sections, excluding the introduction. First, in the data section, I provide an overview of the CCHS 2017-2018 survey and dataset. Plots of key variables are included in this section to gain a better understanding of the respondent population. Second, in the model section, I discuss the logistic regression model used in this study and it’s methodology. Thirdly, in the results section, I provide the statistical values determined through the analysis. Finally, in the discussion section, I further explore the results of my research and present weaknesses of this report. This report is conducted using R (R Core Team [2019]). Tidyverse (Wickham, 2019) was the most utilized library in this study. The report was compiled using R markdown (Allaire, 2020).
+
+
+# Data
+
+The Canadian Community Health Survey (CCHS) is a cross-sectional survey that collected responses from individuals aged 12 and over in 100 different regions across every province and territory in Canada (CCHS User Guide). A cross-sectional survey is an observational study design where the researchers measure the outcome and exposures in the study respondents simultaneously (Setia, 2016). Compared to cohort studies, it is a faster and cheaper method of study that is commonly used public health research (Setia, 2016).
+
+The CCHS data used in this study did not include individuals from Indian reserves, Crown Lands, remote regions, prisons, religious institutions and residents aged 12 to 17 living in foster homes within the survey sampling frame (CCHS User Guide). However, approximately 98% of Canadians aged 12 and over were covered by the CCHS (CCHS User Guide). Data was collected using computer-assisted interviewing through a combination of telephone interviews and personal interview (CCHS User Guide). The target population in this study is the general Canadian population. The sampling frame is Canadians over the age of 12 from each of the provinces and territories. The sample population is the 113, 291 individuals that completed the survey. 
+
+
+
+```{r, echo = F, warning=F, message=F}
+cchs %>% ggplot(aes(Age, fill = Age)) + 
+  geom_bar() +
+  labs(title = "Figure 1: Distribution of Age Groups",
+       x = "Age Group", y = "Count",
+       caption = "Source: 2017-2018 CCHS") +
+  theme_classic() + 
+  scale_fill_grey()
+```
+
+
+```{r, echo = F, warning=F, message=F}
+cchs %>% ggplot(aes(Sex, fill = Sex)) + 
+  geom_bar() +
+  labs(title = "Figure 2: Distribution of Sex",
+       x = "Sex", y = "Count",
+       caption = "Source: 2017-2018 CCHS") +
+  theme_classic() + 
+  scale_fill_grey()
+```
+
+
+```{r, echo = F, warning=F, message=F}
+cchs_stress <- cchs %>%
+  filter(!is.na(Perceived_life_stress))
+cchs_stress %>% ggplot(aes(Perceived_life_stress, fill = Perceived_life_stress)) + 
+  geom_bar() +
+  labs(title = "Figure 3: Perceived Life Stress",
+       x = "Stress Level", y = "Count",
+       caption = "Source: 2017-2018 CCHS") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        plot.title = element_text(size=12)) + 
+  scale_fill_grey()
+```
+
+
+```{r, echo = F, warning=F, message=F}
+cchs_weight <- cchs %>%
+  filter(!is.na(Self_perceived_weight))
+cchs_weight %>% ggplot(aes(Self_perceived_weight, fill = Self_perceived_weight)) + 
+  geom_bar() +
+  labs(title = "Figure 4: Self Perceived Weight",
+       x = "Weight Category", y = "Count",
+       caption = "Source: 2017-2018 CCHS") +
+  theme_classic() + 
+  scale_fill_grey()
+```
+
+
+```{r, echo = F, warning=F, message=F}
+cchs_drug <- cchs %>%
+  filter(!is.na(Illicit_drug_use_12mon))
+cchs_weight %>% ggplot(aes(Illicit_drug_use_12mon, fill = Illicit_drug_use_12mon)) + 
+  geom_bar() +
+  labs(title = "Figure 5: Drug Use (Last 12 Months)",
+       x = "Drug Use", y = "Count",
+       caption = "Source: 2017-2018 CCHS") +
+  theme_classic() + 
+  scale_fill_grey()
+```
+
+
+```{r, echo = F, warning=F, message=F}
+cchs_phys <- cchs %>%
+  filter(!is.na(Weekly_Days_Physically_Active))
+cchs_phys %>% ggplot(aes(Weekly_Days_Physically_Active, fill = Weekly_Days_Physically_Active)) + 
+  geom_bar() +
+  labs(title = "Figure 6: Weekly Days Physically Active",
+       x = "Active Days in a Week", y = "Count",
+       caption = "Source: 2017-2018 CCHS") +
+  theme_classic() + 
+  scale_fill_grey()
+```
+
+
+# Model
+
+This study uses a logistic regression model of the form:
+
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{PhysicalActivity} + \beta_3*x_{Sex} + \beta_4*x_{Weight} + \beta_5*x_{Stress} + \beta_6*x_{DrugUse} + \beta_7*x_{AgeGroup}$$
+
+
+# Results
+
+```{r, echo=F, message=F, warning=F}
+cchs_logit <- glm(Perceived_Mental_Health ~ Age +
+                   Sex + Perceived_life_stress + Self_perceived_weight + Illicit_drug_use_12mon + Weekly_Days_Physically_Active,
+                 data = cchs, family = binomial())
+```
+
+
+Figure 7: Basic Output of Logistic Regression Model
+```{r, echo=F, message=F, warning=F}
+# visualize the model in a table
+logit_summary <- broom::tidy(cchs_logit, conf.int = T)
+kable(logit_summary)
+```
+
+
+```{r, echo=F, warning=F, message=F}
+# get summary and plot coefficients with error bars
+logit_summary %>% ggplot(aes(term, estimate)) + geom_point() + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+                width = .5, colour = "black") +
+  geom_hline(aes(yintercept = 0), color = "black", linetype = "dashed") +
+  coord_flip() + 
+  labs(title = "Figure 8: Distribution of Estimation of Coefficients",
+       subtitle = "Bars represent estimated error",
+       y = "Weight",
+       x = "Estimate",
+       caption = "Source: CCHS 2017-2018 Data") +
+  theme_classic()
+```
+
+Using the glm() function, the logit function for this study is:
+
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.6 + -0.42*x_{PhysicalActivity} + 0.29*x_{Sex} + -1.18*x_{Weight} + -1.25*x_{Stress} + -0.89*x_{DrugUse} + 5.63*x_{AgeGroup}$$
+
+
+Figure 9: Logistic Regression Outputs with Confidence Intervals
+```{r, echo=F, warning=F, message=F}
+# plot more detailed regression table, including Odds Ratios 
+gtsummary::tbl_regression(cchs_logit, intercept = T)
+```
+
+# Discussion 
+
+## Analysis
+
+  As seen in Figure 7, men are more likely to have better mental health than women. A possible explanation for this result is that the two sexes handle their emotions differently. According to the American Psychological Association, men tend to externalize their emotions, leading to impulsive and aggressive behavior (APA, 2011). In contrast, women generally internalize their emotions, which can cause withdrawal and depression (APA,2011). In turn, this emotional stress can lead to physical complications and mental illnesses (Hilary Jacobs Hendel, 2018). In addition, another possible reason for the gender differences is that men are less likely to report a mental illness. According to Dr. Powell, masculinity standards established throughout male upbringing can govern the way in which they pursue help (Audrey Hamilton). Some men feel ashamed of their emotions and avoid discussing their mental health issues with others. As a result, it’s possible that men are reporting “Good” mental health status because they do not want to admit their condition or lack the knowledge to understand their mental health due to prior avoidance of the topic.
+
+  The results in Figure 7 indicate that young adults are more predisposed to having poor mental health. This is validated by the research from Twenge et al., where investigators have found that rates of major depressive episodes have increased substantially among individuals aged 12 to 25 between the years 2005 and 2017 (Twenge, 2017). Twenge suggests that this is due to the rise of social media and it’s affects on various aspects of life for young adolescents and adults (Twenge, 2017). In particular, researchers believe a consequence of digital media use is mood disorders and potential suicidal ideation (Twenge, 2017). Furthermore, older individuals are less likely to use digital media As such, older people are less likely sacrifice their sleep by staying up late at night using their digital media (Twenge, 2017). Interestingly, Figure 7 also indicates that respondents over the age of 80 report “Poor” mental health. This seems reasonable since these individuals are nearing the end of their life and undergo physical and phycological changes that can deeply impact their mental well-being. The Canadian Mental Health Association discusses how loneliness, bereavement and weaker physical condition contribute to the deterioration of mental health in older individuals (Canadian Mental Health Association). 
+
+
+## Weaknesses
+  Individuals may be unwilling to disclose personal information regarding controversial topics. There is a stigma against mental health that is still persistent in society, particularly among men (Leah Campbell, 2019). In addition, the utilization of most drugs is illegal in Canada and as a result, may be a question that individuals do not want to answer or are ashamed of their response. Furthermore, respondents may be wary of the consequences should their answers be revealed. As a result, it is possible that answers for the illicit drug use (past 12 months) question may be unrepresentative of the actual situation. 
+  For future studies, researchers can look to include an income level variable to see if there is a correlation with mental health.
+
+
+
+# References

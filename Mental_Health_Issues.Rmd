@@ -16,12 +16,14 @@ bibliography: references.bib
 #install.packages("knitr")
 #install.packages("dplyr")
 #install.packages("ggplot")
+#install.packages("MatchIt")
 
 library(dplyr)
 library(tidyverse)
 library(gtsummary)
 library(knitr)
 library(broom)
+library(MatchIt)
 ```
 
 
@@ -56,7 +58,7 @@ In this study, I am interested in exploring the relationship between an individu
 
 In addition to perceived mental health, I have also selected the following variables of interest from the Canadian Community Health Survey (CCHS): Age, Sex, Perceived Mental Health, Perceived Weight, Stress Levels, Drug Use and Weekly Physical Activity. The CCHS used in this study was conducted for the time period of 2017-2018. The objective of the survey was to gather health related information from all provinces and territories in Canada. The survey was conducted by 113, 291 respondents over the age of 12 and includes 399 variables. In order to conduct this analysis, I utilized a logistic regression model with perceived mental health as the binary dependent variable. 
 
-This report includes 4 sections, excluding the introduction. First, in the data section, I provide an overview of the CCHS 2017-2018 survey and dataset. Plots of key variables are included in this section to gain a better understanding of the respondent population. Second, in the model section, I discuss the logistic regression model and propensity score modelling used in this study and it’s methodology. Thirdly, in the results section, I provide the statistical values determined through the analysis. Finally, in the discussion section, I further explore the results of my research and present weaknesses of this report. This report is conducted using R (R Core Team [2019]). @citeTidyverse was the most utilized library in this study. The report was compiled using @citermarkdown. Other packages used include @citeKnitr, @citekableExtra, @citegtsummary. 
+This report includes 4 sections, excluding the introduction. First, in the data section, I provide an overview of the CCHS 2017-2018 survey and dataset. Plots of key variables are included in this section to gain a better understanding of the respondent population. Second, in the model section, I discuss the logistic regression model and propensity score modelling used in this study and it’s methodology. Thirdly, in the results section, I provide the statistical values determined through the analysis. Finally, in the discussion section, I further explore the results of my research and present weaknesses of this report. This report is conducted using R (R Core Team [2019]). @citeTidyverse was the most utilized library in this study. The report was compiled using @citermarkdown. Other packages used include @citeKnitr, @citekableExtra, @citebroom, @citedplyr, @citematchit, @citegtsummary. 
 
 
 # Data
@@ -214,6 +216,47 @@ logit_summary %>% ggplot(aes(term, estimate)) + geom_point() +
 
 Figure 8 depicts the coefficients to the logistic regression model. This figure includes error bars that show the upper and lower estimates of the coefficients. Coefficients with positive values indicate that individuals who possess that characteristic are more likely to have a good self-perception of their mental health. In contrast, coefficients with negative values indicate that individuals who possess that characteristic are more likely to have a poor self-perception of their mental health.
 
+Figure 9: Propensity Score Matching Statistics
+```{r, echo=F, warning=F, message=F}
+
+#Propensity Score Model
+
+#Change Weekly Physically Active Days to numeric values to fit in model
+cchs_diff <- cchs %>% 
+  mutate(Weekly_Days_Physically_Active = case_when(
+    Weekly_Days_Physically_Active=="One"~ "1",
+    Weekly_Days_Physically_Active=="Two" ~ "2",
+    Weekly_Days_Physically_Active=="Three"~ "3",
+    Weekly_Days_Physically_Active=="Four"~ "4",
+    Weekly_Days_Physically_Active=="Five" ~ "5",
+    Weekly_Days_Physically_Active=="Six"~ "6",
+    Weekly_Days_Physically_Active=="Seven"~ "7")) %>%
+  filter(!is.na(Weekly_Days_Physically_Active))
+
+cchs_diff$Weekly_Days_Physically_Active <- as.numeric(cchs_diff$Weekly_Days_Physically_Active)
+
+#Estimates for ps model
+#psmodel <- glm(Perceived_Mental_Health ~ Age +
+#                   Sex + Perceived_life_stress + Self_perceived_weight + Illicit_drug_use_12mon + #Weekly_Days_Physically_Active,
+#                 data = cchs_diff, family = binomial())
+
+#pscore <- psmodel$fitted.values
+
+
+#Use matchit function to create propensity score model
+m.out <- matchit(Perceived_Mental_Health ~ Sex + Weekly_Days_Physically_Active,
+                 data = cchs_diff, method = "nearest")
+#Summary of propensity score statistics
+summary(m.out)
+
+#plot propesity score model data 
+#plot(m.out,type="jitter")
+#plot(m.out, type="hist")
+```
+
+Figure 9 displays the summary statistics created through the MatchIt package in R (@citematchit). This was performed using the propensity score matching model. Perceived mental health was used as the binary outcome variable while sex and weekly physcial activity were used as dependent variables of interest. 
+
+\newpage
 
 # Discussion 
 
@@ -238,6 +281,7 @@ Figure 8 depicts the coefficients to the logistic regression model. This figure 
   
   For future studies, researchers can look to include other socio-economic variables to examine whether there is a correlation with mental health. This can include income, employment status and education. As mentioned by the Canadian Mental Health Association, poverty can lead to mental health issues (Canadian Mental Health Association). Money is an important resource today and as such, can influence an individual's happiness, confidence, self-esteem and overall mental well-being. Higher levels of education can lead to better paying job opportunities. However, poor individuals are not privy to the same resources as people who are in a financially stable environment. Therefore, poor individuals might be at an economic disadvantage when it comes to the level of education they are able to complete and what jobs are available for their education level. This can possibly lead to development of a mental illness. 
 
+A limitation of the survey dataset is that it is from the years 2017-2018. A more recent CCHS would include opinions after the COVID pandemic. The pandemic has led to city-wide lockdowns, store closures and social distancing. These factors may all contribute to a deterioration of mental health. Future research can look to incorporate COVID related variables. They can also use difference in differences to observe the difference between mental health prior to the COVID outbreak and afterwards. This can be done using the time group variable in the difference in differences model.
 
 # Code
 Supporting code for this analysis can be found at: https://github.com/Alen-Mitrovski/Mental_Health
